@@ -1,54 +1,42 @@
 body {
-  background: #000;
-  color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, Arial;
-  padding: 12px;
+  font-family: Arial, sans-serif;
+  padding: 15px;
+  background: #f5f5f5;
+}
+
+h1 {
   text-align: center;
 }
 
-h1 { font-size: 2rem; }
-
-input, button {
-  font-size: 1.1rem;
-  padding: 10px;
-  margin: 6px;
+.controls {
+  margin: 10px 0;
+  text-align: center;
 }
 
 button {
-  background: #fff;
-  color: #000;
-  border-radius: 6px;
-  border: none;
+  padding: 8px 14px;
+  margin: 4px;
+  font-size: 16px;
 }
 
-.hint { font-size: 0.9rem; color: #bbb; }
-
 #viewer {
-  height: 75vh;
+  background: white;
+  padding: 10px;
+  max-height: 70vh;
   overflow-y: auto;
-  background: #111;
-  padding: 14px;
-  border-radius: 10px;
-  text-align: left;
+  border-radius: 6px;
 }
 
 canvas, img {
-  display: block;
-  margin: 12px auto;
   max-width: 100%;
-  height: auto;
+  display: block;
+  margin: 10px auto;
 }
-
-.sentence { display: block; margin: 6px 0; }
 
 .word {
   cursor: pointer;
-  padding: 2px 3px;
-  border-radius: 4px;
 }
 
 .highlight {
-  background: #ffeb3b;
-  color: #000;
-  font-weight: bold;
+  background: yellow;
 }
