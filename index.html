@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Accessible Reader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>📖 Accessible Reader</h1>
+
+<input type="file" id="fileInput" accept=".pdf,.txt,.docx,image/*">
+
+<div class="controls">
+  <button id="readBtn" disabled>▶ Read</button>
+  <button onclick="pauseReading()">⏸ Pause</button>
+  <button onclick="resumeReading()">▶ Resume</button>
+  <button onclick="stopReading()">⏹ Stop</button>
+</div>
+
+<p class="hint">Tap any <b>word</b> to start reading from there</p>
+
+<div id="viewer"></div>
+
+<!-- PDF.js -->
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<!-- DOCX -->
+<script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
