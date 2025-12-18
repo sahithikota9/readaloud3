@@ -5,7 +5,10 @@
   <title>Accessible Reader</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <!-- PDF.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Mammoth -->
   <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
@@ -14,7 +17,9 @@
 
 <h1>Accessible Reader</h1>
 
-<input type="file" id="fileInput" accept=".pdf,.txt,.docx,image/*">
+<div class="upload-wrapper">
+  <input type="file" id="fileInput" accept=".pdf,.txt,.docx,image/*">
+</div>
 
 <div class="controls">
   <button onclick="startReading()">▶ Read</button>

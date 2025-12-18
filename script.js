@@ -1,10 +1,9 @@
 const fileInput = document.getElementById("fileInput");
 const viewer = document.getElementById("viewer");
 
-let fullText = "";
-let wordElements = [];
-let utterance = null;
 let voices = [];
+let utterance = null;
+let wordElements = [];
 
 speechSynthesis.onvoiceschanged = () => {
   voices = speechSynthesis.getVoices();
@@ -18,7 +17,7 @@ function handleFile(e) {
 
   stopReading();
   viewer.innerHTML = "";
-  fullText = "";
+  wordElements = [];
 
   const ext = file.name.split(".").pop().toLowerCase();
 
@@ -34,9 +33,9 @@ async function loadPDF(file) {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-  let extractedText = "";
-
   for (let i = 1; i <= pdf.numPages; i++) {
+    const pageContainer = document.createElement("div");
+
     const page = await pdf.getPage(i);
     const viewport = page.getViewport({ scale: 1.2 });
 
@@ -44,35 +43,33 @@ async function loadPDF(file) {
     const ctx = canvas.getContext("2d");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    viewer.appendChild(canvas);
 
     await page.render({ canvasContext: ctx, viewport }).promise;
+    pageContainer.appendChild(canvas);
 
     const text = await page.getTextContent();
+    let extracted = "";
     let lastY = null;
 
     text.items.forEach(item => {
       if (lastY !== null && Math.abs(item.transform[5] - lastY) > 6) {
-        extractedText += "\n";
+        extracted += "\n";
       }
-      extractedText += item.str;
+      extracted += item.str;
       lastY = item.transform[5];
     });
 
-    extractedText += "\n";
+    pageContainer.appendChild(createTextLayer(extracted));
+    viewer.appendChild(pageContainer);
   }
-
-  fullText = extractedText;
-  renderClickableText();
 }
 
-/* ---------------- TEXT ---------------- */
+/* ---------------- OTHER FILES ---------------- */
 
 function loadText(file) {
   const reader = new FileReader();
   reader.onload = () => {
-    fullText = reader.result;
-    renderClickableText();
+    viewer.appendChild(createTextLayer(reader.result));
   };
   reader.readAsText(file);
 }
@@ -81,8 +78,7 @@ function loadDocx(file) {
   const reader = new FileReader();
   reader.onload = async () => {
     const result = await mammoth.extractRawText({ arrayBuffer: reader.result });
-    fullText = result.value;
-    renderClickableText();
+    viewer.appendChild(createTextLayer(result.value));
   };
   reader.readAsArrayBuffer(file);
 }
@@ -93,37 +89,33 @@ function loadImage(file) {
   viewer.appendChild(img);
 }
 
-/* -------- TEXT PROCESSING -------- */
+/* ---------------- TEXT LAYER ---------------- */
 
-function expandAbbreviations(text) {
-  return text.replace(/\b[A-Z]{2,}\b/g, word =>
-    word.split("").join(" ")
-  );
-}
+function createTextLayer(text) {
+  const layer = document.createElement("div");
+  layer.className = "text-layer";
 
-function renderClickableText() {
-  const textLayer = document.createElement("div");
-  textLayer.style.marginTop = "20px";
-
-  wordElements = [];
-
-  let processed = fullText
+  text = text
     .replace(/\b(Mr|Mrs|Ms|Dr)\./g, "$1")
     .replace(/\s+/g, " ");
 
-  processed.split(" ").forEach((word, index) => {
+  text.split(" ").forEach((word, index) => {
     const span = document.createElement("span");
     span.textContent = word + " ";
     span.className = "word";
-    span.onclick = () => startReading(index);
-    textLayer.appendChild(span);
+    span.onclick = () => startReadingFrom(span);
+    layer.appendChild(span);
     wordElements.push(span);
   });
 
-  viewer.appendChild(textLayer);
+  return layer;
 }
 
-/* -------- VOICE -------- */
+/* ---------------- TTS ---------------- */
+
+function expandAbbreviations(text) {
+  return text.replace(/\b[A-Z]{2,}\b/g, w => w.split("").join(" "));
+}
 
 function getBestVoice() {
   return (
@@ -132,6 +124,11 @@ function getBestVoice() {
     voices.find(v => v.lang === "en-US") ||
     voices[0]
   );
+}
+
+function startReadingFrom(span) {
+  const startIndex = wordElements.indexOf(span);
+  startReading(startIndex);
 }
 
 function startReading(startIndex = 0) {
@@ -149,14 +146,14 @@ function startReading(startIndex = 0) {
   utterance.rate = 0.55;
   utterance.pitch = 0.95;
 
-  let currentWord = startIndex;
+  let current = startIndex;
 
   utterance.onboundary = e => {
-    if (e.name === "word" && wordElements[currentWord]) {
+    if (e.name === "word" && wordElements[current]) {
       wordElements.forEach(w => w.classList.remove("highlight"));
-      wordElements[currentWord].classList.add("highlight");
-      wordElements[currentWord].scrollIntoView({ behavior: "smooth", block: "center" });
-      currentWord++;
+      wordElements[current].classList.add("highlight");
+      wordElements[current].scrollIntoView({ behavior: "smooth", block: "center" });
+      current++;
     }
   };
 
