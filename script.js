@@ -27,18 +27,20 @@ function handleFile(e) {
   else if (file.type.startsWith("image")) loadImage(file);
 }
 
-/* ---------------- PDF ---------------- */
+/* ================= PDF ================= */
 
 async function loadPDF(file) {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
 
-  for (let i = 1; i <= pdf.numPages; i++) {
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const pageContainer = document.createElement("div");
 
-    const page = await pdf.getPage(i);
+    const page = await pdf.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.2 });
+    const pageHeight = viewport.height;
 
+    // --- Render PDF page ---
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = viewport.width;
@@ -47,24 +49,35 @@ async function loadPDF(file) {
     await page.render({ canvasContext: ctx, viewport }).promise;
     pageContainer.appendChild(canvas);
 
-    const text = await page.getTextContent();
+    // --- Extract text ---
+    const textContent = await page.getTextContent();
     let extracted = "";
     let lastY = null;
 
-    text.items.forEach(item => {
-      if (lastY !== null && Math.abs(item.transform[5] - lastY) > 6) {
+    const HEADER_CUTOFF = pageHeight * 0.90;
+    const FOOTER_CUTOFF = pageHeight * 0.08;
+
+    textContent.items.forEach(item => {
+      const y = item.transform[5];
+
+      // Skip headers & footers
+      if (y > HEADER_CUTOFF || y < FOOTER_CUTOFF) return;
+
+      if (lastY !== null && Math.abs(y - lastY) > 6) {
         extracted += "\n";
       }
+
       extracted += item.str;
-      lastY = item.transform[5];
+      lastY = y;
     });
 
+    // --- Text immediately after page ---
     pageContainer.appendChild(createTextLayer(extracted));
     viewer.appendChild(pageContainer);
   }
 }
 
-/* ---------------- OTHER FILES ---------------- */
+/* ================= OTHER FILES ================= */
 
 function loadText(file) {
   const reader = new FileReader();
@@ -89,7 +102,7 @@ function loadImage(file) {
   viewer.appendChild(img);
 }
 
-/* ---------------- TEXT LAYER ---------------- */
+/* ================= TEXT LAYER ================= */
 
 function createTextLayer(text) {
   const layer = document.createElement("div");
@@ -99,7 +112,7 @@ function createTextLayer(text) {
     .replace(/\b(Mr|Mrs|Ms|Dr)\./g, "$1")
     .replace(/\s+/g, " ");
 
-  text.split(" ").forEach((word, index) => {
+  text.split(" ").forEach(word => {
     const span = document.createElement("span");
     span.textContent = word + " ";
     span.className = "word";
@@ -111,9 +124,10 @@ function createTextLayer(text) {
   return layer;
 }
 
-/* ---------------- TTS ---------------- */
+/* ================= TTS ================= */
 
 function expandAbbreviations(text) {
+  // Spell out ALL-CAPS abbreviations only
   return text.replace(/\b[A-Z]{2,}\b/g, w => w.split("").join(" "));
 }
 
@@ -143,7 +157,7 @@ function startReading(startIndex = 0) {
 
   utterance = new SpeechSynthesisUtterance(textToRead);
   utterance.voice = getBestVoice();
-  utterance.rate = 0.55;
+  utterance.rate = 0.55;   // audiobook-like
   utterance.pitch = 0.95;
 
   let current = startIndex;
@@ -152,7 +166,10 @@ function startReading(startIndex = 0) {
     if (e.name === "word" && wordElements[current]) {
       wordElements.forEach(w => w.classList.remove("highlight"));
       wordElements[current].classList.add("highlight");
-      wordElements[current].scrollIntoView({ behavior: "smooth", block: "center" });
+      wordElements[current].scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
       current++;
     }
   };
